@@ -2,8 +2,8 @@
 function conectarDB() {
     $host = "localhost";
     $dbname = "omillan_db"; // cambia si tu BD tiene otro nombre
-    $user = "root";
-    $pass = "1234";
+    $user = "omillan";
+    $pass = "12345";
 
     try {
         $conexion = new PDO(
