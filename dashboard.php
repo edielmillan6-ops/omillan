@@ -1,101 +1,261 @@
 <?php
 session_start();
 
-// ¿Existe la sesión? Si no, fuera de aquí.
 if (!isset($_SESSION['id'])) {
     header("Location: index.html");
     exit();
 }
+
+require_once 'db.php';
+$db = conectarDB();
+
+// 🔥 OBTENER DATOS
+$libros = $db->query("SELECT * FROM libros")->fetchAll(PDO::FETCH_ASSOC);
+$autores = $db->query("SELECT * FROM autores")->fetchAll(PDO::FETCH_ASSOC);
+
+$prestamos = $db->query("
+    SELECT a.nombre AS autor, l.titulo AS libro
+    FROM auto_libro al
+    JOIN autores a ON al.id_autor = a.id_autor
+    JOIN libros l ON al.id_libro = l.id_libro
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// 🔥 GUARDAR
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // LIBRO
+    if (isset($_POST['titulo']) && isset($_POST['paginas'])) {
+        $stmt = $db->prepare("INSERT INTO libros (titulo, numero_de_paginas) VALUES (?, ?)");
+        $stmt->execute([$_POST['titulo'], $_POST['paginas']]);
+        header("Location: dashboard.php?foco=on&seccion=libro&status=success");
+        exit();
+    }
+
+    // AUTOR
+    if (isset($_POST['nombre']) && !isset($_POST['id_libro'])) {
+        $stmt = $db->prepare("INSERT INTO autores (nombre) VALUES (?)");
+        $stmt->execute([$_POST['nombre']]);
+        header("Location: dashboard.php?foco=on&seccion=autor&status=success");
+        exit();
+    }
+
+    // PRESTAMO
+    if (isset($_POST['id_autor']) && isset($_POST['id_libro'])) {
+    // ASIGNACIÓN: Debes pasar los datos del POST a variables
+    $id_autor = $_POST['id_autor'];
+    $id_libro = $_POST['id_libro'];
+
+    $sql = "INSERT INTO auto_libro (id_autor, id_libro) VALUES (?, ?)";
+    $stmt = $db->prepare($sql);
+    
+    // Ejecutar con las variables ya capturadas
+    if ($stmt->execute([$id_autor, $id_libro])) {
+        header("Location: dashboard.php?foco=on&seccion=prestamo&status=success");
+        exit();
+    } else {
+        echo "Error al insertar el registro.";
+    }
+  }
+}
 ?>
+
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
-    <link href="./wwwroot/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="./wwwroot/css/bootstrap-icons.min.css">
-    <script src="./wwwroot/js/jquery-4.0.0.min.js"></script>
-    <script src="./wwwroot/js/script.js"></script>
-  </head>
-  <body>
-    <header>
-      <div class="px-3 py-2 text-bg-primary border-bottom">
-        <div class="container">
-          <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-            <a class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none"> 
-              <i class="bi bi-bootstrap fw-bold fs-5 pe-2"></i>
-            </a>
-            <nav >
-            <ul class="nav col-12 col-lg-auto my-2 justify-content-center my-md-0 text-small">
-              <li><a class="nav-link text-white" href="#"> <i class="bi bi-house fw-bold fs-5 pe-2"></i>Home</a></li>
-              <li><a class="nav-link text-white" href="logout.php"> 
-                  <i class="bi bi-box-arrow-in-left fw-bold fs-5 pe-2"></i>Salir
-                </a></li>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-            </ul>
-            </nav>
-          </div>
+  <link href="./wwwroot/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./wwwroot/css/bootstrap-icons.min.css">
 
-        </div>
-      </div>
-    </header>
-    <div class="container-fluid">
+  <style>
+  body {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+    url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f');
+    background-size: cover;
+    color: white;
+  }
 
-      <div class="row">
+  .seccion {
+    background: rgba(255,255,255,0.95);
+    padding: 20px;
+    border-radius: 15px;
+    color: #1b4332;
+  }
+</style>
+</head>
 
-        <aside class="col-8 col-sm-6 col-md-3 col-lg-3 col-xl-2 d-none d-lg-block show"
-        style="position: fixed; top: 0;bottom: 0;left: 0;border-right: 1px solid var(--bs-border-color-translucent); margin-top:70px; padding: 15px 0 0;z-index: 999; overflow-y: auto;">
-        <div class="px-3">
-          <nav>
-          <ul class="nav nav-pills flex-column mb-auto">            
-            <li class="nav-item">
-              <a class="nav-link active" href="#" onclick="document.getElementById('lightbulb').src='./wwwroot/img/bulboff.gif'">
-              <i class="bi bi-lightbulb fw-bold fs-5 pe-2"></i>
-              Apagado</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link"  href="#" onclick="document.getElementById('lightbulb').src='./wwwroot/img/bulbon.gif'">
-              <i class="bi bi-lightbulb-fill fw-bold fs-5 pe-2"></i>
-              Encendido</a>
-            </li>
-          </ul>
-        </nav>
-        </div>
-        
-      </aside>
+<body>
 
-      <main class="col-lg-9 col-xl-10 offset-lg-3 offset-xl-2">
+<div class="container mt-4 text-center">
+    <h3>📚 Biblioteca Omillan</h3>
+    <a href="logout.php" class="btn btn-light btn-sm">Salir</a>
 
-        <div class="row">
-          <div class="col-12 offset-sm-0 offset-lg-1 col-lg-10 offset-xl-2 col-xl-8 mt-5">
-            <article id="article">
-            <figure>
-              <img id="lightbulb" class="img-fluid" src="./wwwroot/img/bulboff.gif">
-            </figure>
-          </article>
-
-          </div>
-
-        </div>
-          
-      </main>
-
-      </div>
-      
-      <div class="row">
-        
-      </div>
-      
+    <!-- FOCO -->
+    <div class="mt-4">
+        <img id="lightbulb" src="./wwwroot/img/bulboff.gif" width="120">
     </div>
-    
-    
-    
 
+    <!-- BOTONES -->
+    <div class="mt-3">
+        <button id="btnLibro" class="btn btn-success" disabled onclick="mostrar('libro')">Libro</button>
+        <button id="btnAutor" class="btn btn-primary" disabled onclick="mostrar('autor')">Autor</button>
+        <button id="btnPrestamo" class="btn btn-warning" disabled onclick="mostrar('prestamo')">Préstamo</button>
+    </div>
 
-    <script src="./js/bootstrap.bundle.min.js"></script>
-  </body>
+    <div class="mt-3">
+        <button class="btn btn-dark" onclick="encenderFoco()">Encender 💡</button>
+        <button class="btn btn-secondary" onclick="apagarFoco()">Apagar</button>
+    </div>
+
+    <!-- LIBRO -->
+    <div id="libro" class="seccion mt-4 d-none">
+
+        <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
+            <div class="alert alert-success">Guardado correctamente ✅</div>
+        <?php endif; ?>
+
+        <h5>Registrar Libro</h5>
+        <form method="POST">
+            <input class="form-control mb-2" name="titulo" placeholder="Título" required>
+            <input class="form-control mb-2" name="paginas" type="number" placeholder="Páginas" required>
+            <button class="btn btn-success w-100">Guardar</button>
+        </form>
+
+        <hr>
+
+      <table class="table table-dark">
+    <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Páginas</th>
+    </tr>
+
+    <?php foreach ($libros as $l): ?>
+    <tr>
+        <td><?= $l['id_libro'] ?></td>
+        <td><?= $l['titulo'] ?></td>
+        <td><?= $l['numero_de_paginas'] ?></td>
+    </tr>
+    <?php endforeach; ?>
+  </table>
+    </div>
+
+    <!-- AUTOR -->
+    <div id="autor" class="seccion mt-4 d-none">
+        <h5>Registrar Autor</h5>
+        <form method="POST">
+            <input class="form-control mb-2" name="nombre" placeholder="Nombre" required>
+            <button class="btn btn-primary w-100">Guardar</button>
+        </form>
+
+        <hr>
+        <table class="table table-striped table-sm">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <?php foreach ($autores as $a): ?>
+        <tr>
+            <td><?= $a['id_autor'] ?></td>
+            <td><?= htmlspecialchars($a['nombre']) ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+    </table>
+    </div>
+
+    <!-- PRESTAMO -->
+    <div id="prestamo" class="seccion mt-4 d-none">
+        <h5>Nuevo Préstamo</h5>
+        <form method="POST">
+    
+    <!-- SELECT AUTOR -->
+    <label>Autor</label>
+    <select class="form-control mb-2" name="id_autor" required>
+        <option value="">Seleccione un autor</option>
+        <?php foreach ($autores as $a): ?>
+            <option value="<?= $a['id_autor'] ?>">
+                <?= htmlspecialchars($a['nombre']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+
+    <!-- SELECT LIBRO -->
+    <label>Libro</label>
+    <select class="form-control mb-2" name="id_libro" required>
+        <option value="">Seleccione un libro</option>
+        <?php foreach ($libros as $l): ?>
+            <option value="<?= $l['id_libro'] ?>">
+                <?= htmlspecialchars($l['titulo']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+
+      <button class="btn btn-warning w-100">Confirmar Préstamo</button>
+    </form>
+
+        <table class="table table-striped table-sm">
+    <thead>
+        <tr>
+            <th>Autor</th>
+            <th>Libro</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <?php foreach ($prestamos as $p): ?>
+        <tr>
+            <td><?= htmlspecialchars($p['autor']) ?></td>
+            <td><?= htmlspecialchars($p['libro']) ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+    </table>
+    </div>
+
+</div>
+
+<script>
+function encenderFoco(){
+    document.getElementById('lightbulb').src = './wwwroot/img/bulbon.gif';
+    btnLibro.disabled = false;
+    btnAutor.disabled = false;
+    btnPrestamo.disabled = false;
+}
+
+function apagarFoco(){
+    document.getElementById('lightbulb').src = './wwwroot/img/bulboff.gif';
+    btnLibro.disabled = true;
+    btnAutor.disabled = true;
+    btnPrestamo.disabled = true;
+    ocultar();
+}
+
+function mostrar(id){
+    ocultar();
+    document.getElementById(id).classList.remove('d-none');
+}
+
+function ocultar(){
+    ['libro','autor','prestamo'].forEach(x=>{
+        document.getElementById(x).classList.add('d-none');
+    });
+}
+
+// Mantener estado
+window.onload = function() {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('foco') === 'on') {
+        encenderFoco();
+        if (p.get('seccion')) mostrar(p.get('seccion'));
+    }
+};
+</script>
+
+</body>
 </html>
-
-
-

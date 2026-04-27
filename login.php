@@ -1,66 +1,46 @@
 <?php
+require_once 'db.php';
 
-// index.php
-require_once 'db.php'; // Traemos el código del otro archivo
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    $email = $_POST['email'] ?? '';
+    $pwd   = $_POST['pwd'] ?? '';
 
+    try {
 
-//  Obtenemos los datos del formulario
-     $email  = $_POST['email'];
-     $pwd = $_POST['pwd'];
-     
-     // Llamamos a la función y guardamos el objeto en $db
-     $db = conectarDB();
-      
+        $db = conectarDB();
 
-  try {
-  
+        $sql = "SELECT id_usuario, email, password 
+                FROM usuarios 
+                WHERE email = :email";
 
-
-        $sql = "select id,password,email from usuarios where email= :email";
         $query = $db->prepare($sql);
+        $query->execute(['email' => $email]);
 
-	
-
-        // Ejecutamos pasando los datos en un array
-        $resultado = $query->execute([
-            'email'  => $email
-        ]);
         $usuario = $query->fetch(PDO::FETCH_ASSOC);
-        if($usuario){
-        $verify = password_verify($pwd, $usuario['password']);
-        if($verify){
-            session_start();
-            $_SESSION['username'] = $usuario['email']; // Store session data
-            $_SESSION['id'] = $usuario['id'];
-            header("Location: dashboard.php");
-            
-        }else{
-            echo "La contraseña esta mal...";
+
+        if ($usuario) {
+
+            if (password_verify($pwd, $usuario['password'])) {
+
+                session_start();
+                $_SESSION['id'] = $usuario['id_usuario'];
+                $_SESSION['email'] = $usuario['email'];
+
+                header("Location: /omillan/dashboard.php");
+                exit;
+
+
+            } else {
+                echo "❌ Contraseña incorrecta";
+            }
+
+        } else {
+            echo "❌ Usuario no encontrado";
         }
-        
-        
-        }else{
-            echo "No se encontraron datos!";
-        }
-
-        
-
-        
-
-        
 
     } catch (PDOException $e) {
-        // Manejo de errores (ej. si el email ya existe y es único)
-        echo "Database Error: " . $e->getMessage();
-
-        
-     
+        echo "Error: " . $e->getMessage();
     }
-
-
-
-
-
-
+}
 ?>

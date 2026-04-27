@@ -1,65 +1,54 @@
 <?php
 
-// Sesionecs
-session_start();
+require_once 'db.php';
 
-$_SESSION["username"] = "juan";
-$_SESSION["login_time"] = time();
+// Validar que venga del formulario
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-// index.php
-require_once 'db.php'; // Traemos el código del otro archivo
+    $email = $_POST['email'] ?? '';
+    $pwd   = $_POST['pwd'] ?? '';
 
-//require_once 'db-pgsql.php'; // Traemos el código del otro archivo
+    try {
 
+        $db = conectarDB();
 
-//  Obtenemos los datos del formulario
-     $nombre = $_POST['nombre'];
-     $email  = $_POST['email'];
-     $pwd = $_POST['pwd'];
-     // Llamamos a la función y guardamos el objeto en $db
-     $db = conectarDB();
-      
+        $sql = "SELECT id_usuario, password, email 
+                FROM usuarios 
+                WHERE email = :email";
 
-  try {
-        //  Preparamos la consulta con "marcadores" (:nombre, :email)
-        // Esto separa la estructura de la consulta de los datos reales
-        $sql = "INSERT INTO usuarios (nombre, email,password) VALUES (:nombre, :email, :password)";
         $query = $db->prepare($sql);
 
-	$passwordHash = password_hash($pwd, PASSWORD_DEFAULT);
-
-        // Ejecutamos pasando los datos en un array
-        $resultado = $query->execute([
-            'nombre' => $nombre,
-            'email'  => $email,
-	    'password' => $passwordHash
+        $query->execute([
+            'email' => $email
         ]);
 
-        if ($resultado) {
-            header("Location: index.html");
-            
-	   echo "El usuario se ha almacenado correctamente!  <a href='index.html'>Continuar</a>";
-	   
+        $usuario = $query->fetch(PDO::FETCH_ASSOC);
+
+        if ($usuario) {
+
+            // Verificar contraseña encriptada
+            if (password_verify($pwd, $usuario['password'])) {
+
+                session_start();
+                $_SESSION['username'] = $usuario['email'];
+                $_SESSION['id'] = $usuario['id_usuario'];
+
+                header("Location: dashboard.php");
+                exit;
+
+            } else {
+                echo "❌ Contraseña incorrecta";
+            }
+
+        } else {
+            echo "❌ Usuario no encontrado";
         }
 
     } catch (PDOException $e) {
-        // Manejo de errores (ej. si el email ya existe y es único)
-
-        if ($e->errorInfo[1] == 1062) {
-            
-            echo "El email ya existe, favor de intendarlo con otro correo. <a href='index.html'>Continuar</a>";
-        }else {
-        // Handle other database errors
-        echo "Database Error: " . $e->getMessage();
-               
-        
-    }
-     
+        echo "Error de BD: " . $e->getMessage();
     }
 
-
-
-
-
-
+} else {
+    echo "Acceso no permitido";
+}
 ?>

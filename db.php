@@ -1,31 +1,24 @@
 <?php
-
-// db.php
-
 function conectarDB() {
     $host = "localhost";
-    $db   = "omillan_db";
-    $user = "omillan";
-    $pass = "12345";
-    $charset = "utf8mb4";
-
-    // El DSN (Data Source Name) define el tipo de driver y los datos del servidor
-    $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-
-    // Opciones recomendadas para PDO
-    $options = [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Lanza errores como excepciones
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // Devuelve los datos como array asociativo
-        PDO::ATTR_EMULATE_PREPARES   => false,                  // Usa consultas preparadas reales
-    ];
+    $dbname = "omillan_db"; // cambia si tu BD tiene otro nombre
+    $user = "root";
+    $pass = "1234";
 
     try {
-        return new PDO($dsn, $user, $pass, $options);
-    } catch (\PDOException $e) {
-        // En producción, no muestres $e->getMessage() al usuario, regístralo en un log
-        die("Error de conexión: " . $e->getMessage());
+        $conexion = new PDO(
+            "mysql:host=$host;dbname=$dbname;charset=utf8",
+            $user,
+            $pass
+        );
+
+        $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        return $conexion;
+
+    } catch (PDOException $e) {
+        echo "Error de conexión: " . $e->getMessage();
+        exit;
     }
 }
-
-
 ?>
