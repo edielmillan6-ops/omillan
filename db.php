@@ -2,7 +2,7 @@
 function conectarDB() {
     $host = "localhost";
     $dbname = "omillan_db"; // cambia si tu BD tiene otro nombre
-    $user = "omillan_app";
+    $user = "omillan_app"; // cambia si tu usuario es diferente
     $pass = "12345";
 
     try {
