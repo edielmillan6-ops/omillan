@@ -38,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 setcookie($cookie_name, $cookie_value, $expiry, "/");
                 // --- FIN DE AGREGADO PARA COOKIES ---
 
-                header("Location: /omillan/dashboard.php");
+                header("Location: dashboard.php");
                 exit;
 
             } else {
