@@ -1,3 +1,14 @@
+<?php
+session_start();
+
+// Si la cookie SÍ existe, la pasamos a la sesión y redirigimos
+if(isset($_COOKIE["id_usuario"])) {
+    $_SESSION['id'] = $_COOKIE["id_usuario"]; // Usamos 'id' para mantener consistencia con tu login.php
+    header("Location: dashboard.php"); // Redirigimos al dashboard si ya está recordado
+    exit();
+}
+?>
+
 <!doctype html>
 <html lang="es">
 <head>
@@ -120,7 +131,6 @@
           <a href="registro.html">Crear cuenta</a>
         </div>
 
-        <!-- 🔥 BOTÓN CORRECTO -->
         <button type="submit" class="btn btn-login">
           <i class="bi bi-box-arrow-in-right"></i> Entrar
         </button>
